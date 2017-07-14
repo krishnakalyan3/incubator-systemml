@@ -23,11 +23,10 @@
 import os
 import sys
 from os.path import join, exists, abspath
-from os import environ
-import glob
 import argparse
 import shutil
 import platform
+from utils import get_env, find_script_file, get_systemml_config
 
 
 def default_jars(systemml_home):
@@ -35,57 +34,15 @@ def default_jars(systemml_home):
     lib_dir = join(build_dir, 'lib')
     systemml_jar = build_dir + os.sep + "SystemML.jar"
     jcuda_jars = glob.glob(lib_dir + os.sep + "jcu*.jar")
-    target_jars = ','.join(jcuda_jars )
+    target_jars = ','.join(jcuda_jars)
 
     return target_jars, systemml_jar
-
-
-def get_env():
-    # sys ml env set and error handling
-    systemml_home = os.environ.get('SYSTEMML_HOME')
-    if systemml_home is None:
-        print('SYSTEMML_HOME not found')
-        sys.exit()
-
-    spark_home = environ.get('SPARK_HOME')
-    if spark_home is None:
-        print('SPARK_HOME not found')
-        sys.exit()
-    return spark_home, systemml_home
-
-
-def find_file(name, path):
-    for root, dirs, files in os.walk(path):
-        if name in files:
-            return join(root, name)
-    return None
-
-
-def find_script_file(systemml_home, script_file):
-    scripts_dir = join(systemml_home, 'scripts')
-    if not (exists(script_file)):
-        script_file = find_file(script_file, scripts_dir)
-        if script_file is None:
-            print('Could not find DML script: ' + script_file)
-            sys.exit()
-
-    return script_file
-
-
-def get_systemml_config(systemml_home, config):
-    if config is None:
-        systemml_config_path_arg = join(systemml_home, 'conf', 'SystemML-config.xml.template')
-    else:
-        systemml_config_path_arg = config
-
-    return systemml_config_path_arg
-
 
 def get_spark_conf(systemml_home, conf):
     if conf is None:
         log4j_properties_path = join(systemml_home, 'conf', 'log4j.properties.template')
         default_conf = 'spark.driver.extraJavaOptions=-Dlog4j.configuration=file:{}'\
-                        .format(log4j_properties_path)
+                       .format(log4j_properties_path)
     else:
         default_conf = ' --conf '.join(conf + [default_conf])
 
@@ -129,14 +86,14 @@ def spark_submit_entry(master, driver_memory, num_executors, executor_memory,
     cmd_spark = [spark_path, '--class', 'org.apache.sysml.api.DMLScript',
                  '--master', master, '--driver-memory', driver_memory,
                  '--num-executors', num_executors, '--executor-memory', executor_memory,
-                 '--executor-cores', executor_cores, '--conf', default_conf, '--jars', cuda_jars, systemml_jars]
+                 '--executor-cores', executor_cores, '--conf', default_conf,
+                 '--jars', cuda_jars, systemml_jars]
 
     cmd_system_ml = ['-config', default_config,
                      '-exec', 'hybrid_spark', '-f', script_file, ' '.join(ml_options)]
 
     cmd = cmd_spark + cmd_system_ml
     return_code = os.system(' '.join(cmd))
-
     return return_code
 
 
@@ -156,14 +113,12 @@ if __name__ == '__main__':
     cparser.add_argument('-nvargs', help='List of attributeName-attributeValue pairs', nargs='+', metavar='')
     cparser.add_argument('-args', help='List of positional argument values', metavar='', nargs='+')
     cparser.add_argument('-config', help='System-ML configuration file (e.g SystemML-config.xml)', metavar='')
-    cparser.add_argument('-exec', default='hybrid_spark', help='System-ML backend (e.g spark, spark-hybrid)',
-                         metavar='')
     cparser.add_argument('-explain', help='explains plan levels can be hops, runtime, '
                                           'recompile_hops, recompile_runtime', nargs='?', const='runtime', metavar='')
     cparser.add_argument('-debug', help='runs in debug mode', action='store_true')
     cparser.add_argument('-stats', help='Monitor and report caching/recompilation statistics, '
                                         'heavy hitter <count> is 10 unless overridden', nargs='?', const='10',
-                         metavar='')
+                                   metavar='')
     cparser.add_argument('-gpu', help='uses CUDA instructions when reasonable, '
                                       'set <force> option to skip conservative memory estimates '
                                       'and use GPU wherever possible', nargs='?')
@@ -179,10 +134,9 @@ if __name__ == '__main__':
     # Set additional arguments
     arg_dict['cuda_jars'] = target_jars
     arg_dict['systemml_jars'] = systemml_jar
-    # Debug
-    # print(arg_dict)
 
-    target_jars = default_jars(systemml_home)
+    return_code = spark_submit_entry(**arg_dict)
 
-    del arg_dict['exec']
-    spark_submit_entry(**arg_dict)
+    if return_code != 0:
+        print('Failed to run SystemML. Exit code :' + str(return_code))
+        print(' '.join(cmd))
