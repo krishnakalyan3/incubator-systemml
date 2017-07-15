@@ -21,11 +21,9 @@
 #-------------------------------------------------------------
 
 import os
-import shutil
-import sys
 from os.path import join, exists
-from utils import get_env, find_script_file, get_systemml_config
 import argparse
+from utils import get_env, find_script_file, log4j_path, config_path
 
 
 def default_classpath(systemml_home):
@@ -36,10 +34,26 @@ def default_classpath(systemml_home):
     return build_lib, lib_lib, hadoop_lib
 
 
-def standalone_entry(default_cp, nvargs, args, config, explain, debug, stats, gpu, f):
+# TODO:
+# Test config
+# add comments
+def standalone_entry(nvargs, args, config, explain, debug, stats, gpu, f):
 
+    _, systemml_home = get_env()
     script_file = find_script_file(systemml_home, f)
-    default_config = get_systemml_config(systemml_home, config)
+
+    default_cp = ':'.join(default_classpath(systemml_home))
+    java_memory = '-Xmx8g -Xms4g -Xmn1g'
+
+    # Log4j
+    log4j = log4j_path(systemml_home)
+    log4j_properties_path = '-Dlog4j.configuration=file:{}'.format(log4j)
+
+    # Config
+    if config is None:
+        default_config = config_path(systemml_home)
+    else:
+        default_config = ' --conf '.join(conf + [default_conf])
 
     ml_options = []
     if nvargs is not None:
@@ -60,7 +74,8 @@ def standalone_entry(default_cp, nvargs, args, config, explain, debug, stats, gp
         ml_options.append('-gpu')
         ml_options.append(gpu)
 
-    cmd = ['java', '-cp', default_cp, 'org.apache.sysml.api.DMLScript',
+    cmd = ['java', java_memory, log4j_properties_path,
+           '-cp', default_cp, 'org.apache.sysml.api.DMLScript',
            '-f', script_file, '-exec', 'singlenode', '-config', default_config,
            ' '.join(ml_options)]
 
@@ -69,7 +84,6 @@ def standalone_entry(default_cp, nvargs, args, config, explain, debug, stats, gp
 
 
 if __name__ == '__main__':
-    spark_home, systemml_home = get_env()
 
     cparser = argparse.ArgumentParser(description='System-ML Standalone Script')
 
@@ -91,11 +105,7 @@ if __name__ == '__main__':
 
     args = cparser.parse_args()
     arg_dict = vars(args)
-
-    # Default Initialization
-    arg_dict['default_cp'] = ':'.join(default_classpath(systemml_home))
     return_code = standalone_entry(**arg_dict)
 
     if return_code != 0:
         print('Failed to run SystemML. Exit code :' + str(return_code))
-        print(' '.join(cmd))
