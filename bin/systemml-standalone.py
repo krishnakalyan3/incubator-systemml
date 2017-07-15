@@ -204,7 +204,7 @@ from utils import get_env, find_script_file, get_systemml_config
 import argparse
 
 
-def default_jars(systemml_home):
+def default_classpath(systemml_home):
     build_lib = join(systemml_home, 'target', '*')
     lib_lib = join(systemml_home, 'target', 'lib', '*')
     hadoop_lib = join(systemml_home, 'target', 'lib', 'hadoop', '*')
@@ -212,7 +212,7 @@ def default_jars(systemml_home):
     return build_lib, lib_lib, hadoop_lib
 
 
-def standalone_entry(default_jars, nvargs, args, config, explain, debug, stats, gpu, f):
+def standalone_entry(default_cp, nvargs, args, config, explain, debug, stats, gpu, f):
 
     script_file = find_script_file(systemml_home, f)
     default_config = get_systemml_config(systemml_home, config)
@@ -236,7 +236,7 @@ def standalone_entry(default_jars, nvargs, args, config, explain, debug, stats, 
         ml_options.append('-gpu')
         ml_options.append(gpu)
 
-    cmd = ['java', '-cp', default_jars, 'org.apache.sysml.api.DMLScript',
+    cmd = ['java', '-cp', default_cp, 'org.apache.sysml.api.DMLScript',
            '-f', script_file, '-exec', 'singlenode', '-config', default_config,
            ' '.join(ml_options)]
 
@@ -269,7 +269,7 @@ if __name__ == '__main__':
     arg_dict = vars(args)
 
     # Default Initialization
-    arg_dict['default_jars'] = ':'.join(default_jars(systemml_home))
+    arg_dict['default_cp'] = ':'.join(default_classpath(systemml_home))
     return_code = standalone_entry(**arg_dict)
 
     if return_code != 0:
