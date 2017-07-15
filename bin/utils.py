@@ -23,8 +23,6 @@
 import os
 from os.path import join, exists
 from os import environ
-import glob
-
 
 def get_env():
     systemml_home = os.environ.get('SYSTEMML_HOME')

@@ -22,11 +22,14 @@
 
 import os
 import sys
+
+import glob
 from os.path import join, exists, abspath
 import argparse
 import shutil
 import platform
 from utils import get_env, find_script_file, get_systemml_config
+
 
 
 def default_jars(systemml_home):
@@ -37,6 +40,7 @@ def default_jars(systemml_home):
     target_jars = ','.join(jcuda_jars)
 
     return target_jars, systemml_jar
+
 
 def get_spark_conf(systemml_home, conf):
     if conf is None:
