@@ -24,6 +24,7 @@ import os
 from os.path import join, exists
 from os import environ
 
+
 def get_env():
     systemml_home = os.environ.get('SYSTEMML_HOME')
     if systemml_home is None:
@@ -55,10 +56,20 @@ def find_script_file(systemml_home, script_file):
     return script_file
 
 
-def get_systemml_config(systemml_home, config):
-    if config is None:
-        systemml_config_path_arg = join(systemml_home, 'conf', 'SystemML-config.xml.template')
-    else:
-        systemml_config_path_arg = config
+def log4j_path(systemml_home):
+    log4j_properties_path = join(systemml_home, 'conf', 'log4j.properties')
+    log4j_template_properties_path = join(systemml_home, 'conf', 'log4j.properties.template')
+    if not (exists(log4j_properties_path)):
+        shutil.copyfile(log4j_template_properties_path, log4j_properties_path)
+        print('... created ' + log4j_properties_path)
+    return log4j_properties_path
 
-    return systemml_config_path_arg
+
+def config_path(systemml_home):
+    systemml_config_path = join(systemml_home, 'conf', 'SystemML-config.xml')
+    systemml_template_config_path = join(systemml_home, 'conf', 'SystemML-config.xml.template')
+    if not (exists(systemml_config_path)):
+        shutil.copyfile(systemml_template_config_path, systemml_config_path)
+        print('... created ' + systemml_config_path)
+    return systemml_config_path
+

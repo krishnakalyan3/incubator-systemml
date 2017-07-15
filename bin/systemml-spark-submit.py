@@ -21,15 +21,10 @@
 # -------------------------------------------------------------
 
 import os
-import sys
-
 import glob
 from os.path import join, exists, abspath
 import argparse
-import shutil
-import platform
-from utils import get_env, find_script_file, get_systemml_config
-
+from utils import get_env, find_script_file, log4j_path, config_path
 
 
 def default_jars(systemml_home):
@@ -38,21 +33,12 @@ def default_jars(systemml_home):
     systemml_jar = build_dir + os.sep + "SystemML.jar"
     jcuda_jars = glob.glob(lib_dir + os.sep + "jcu*.jar")
     target_jars = ','.join(jcuda_jars)
-
     return target_jars, systemml_jar
 
 
-def get_spark_conf(systemml_home, conf):
-    if conf is None:
-        log4j_properties_path = join(systemml_home, 'conf', 'log4j.properties.template')
-        default_conf = 'spark.driver.extraJavaOptions=-Dlog4j.configuration=file:{}'\
-                       .format(log4j_properties_path)
-    else:
-        default_conf = ' --conf '.join(conf + [default_conf])
-
-    return default_conf
-
-
+# TODO:
+# Test config
+# add comments
 def spark_submit_entry(master, driver_memory, num_executors, executor_memory,
                        executor_cores, conf, cuda_jars, systemml_jars,
                        nvargs, args, config, explain, debug, stats, gpu, f):
@@ -60,8 +46,20 @@ def spark_submit_entry(master, driver_memory, num_executors, executor_memory,
     spark_home, systemml_home = get_env()
     spark_path = join(spark_home, 'bin', 'spark-submit')
     script_file = find_script_file(systemml_home, f)
-    default_conf = get_spark_conf(systemml_home, conf)
-    default_config = get_systemml_config(systemml_home, config)
+
+    # Log4j
+    log4j = log4j_path(systemml_home)
+    log4j_properties_path = 'spark.driver.extraJavaOptions=-Dlog4j.configuration=file:{}'.format(log4j)
+    if conf is None:
+        default_conf = log4j_properties_path
+    else:
+        default_conf = ' --conf '.join(conf + [default_conf])
+
+    # Config
+    if config is None:
+        default_config = config_path(systemml_home)
+    else:
+        default_config = ' --conf '.join(conf + [default_conf])
 
     #  optional arguments
     ml_options = []
@@ -143,4 +141,3 @@ if __name__ == '__main__':
 
     if return_code != 0:
         print('Failed to run SystemML. Exit code :' + str(return_code))
-        print(' '.join(cmd))
