@@ -37,6 +37,8 @@ def default_classpath(systemml_home):
 # TODO:
 # Test config
 # add comments
+# arg-parse add default and options
+# Windows support
 def standalone_entry(nvargs, args, config, explain, debug, stats, gpu, f):
 
     _, systemml_home = get_env()

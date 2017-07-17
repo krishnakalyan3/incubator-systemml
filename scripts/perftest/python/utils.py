@@ -34,6 +34,45 @@ from functools import reduce
 # This file contains all the utility functions required for performance test module
 
 
+def sup_args(config_dict, spark_dict, exec_type):
+
+    sup_args_dict = {}
+
+    if config_dict['stats'] is not None:
+        sup_args_dict['-stats'] = config_dict['stats']
+
+    if config_dict['explain'] is not None:
+        sup_args_dict['-explain'] = config_dict['explain']
+
+    if config_dict['config'] is not None:
+        sup_args_dict['-config'] = config_dict['config']
+
+    spark_args_dict = {}
+    if exec_type == 'hybrid_spark':
+        if spark_dict['master'] is not None:
+            spark_args_dict['--master'] = spark_dict['master']
+
+        if spark_dict['driver_memory'] is not None:
+            spark_args_dict['--driver-memory'] = spark_dict['driver_memory']
+
+        if spark_dict['executor_cores'] is not None:
+            spark_args_dict['--executor_cores'] = spark_dict['executor_cores']
+
+        if spark_dict['conf'] is not None:
+            spark_args_dict['--conf'] = spark_dict['conf']
+
+    return sup_args_dict, spark_args_dict
+
+
+def args_dict_split(all_arguments):
+    args_dict = dict(list(all_arguments.items())[0:8])
+    config_dict = dict(list(all_arguments.items())[8:11])
+    spark_dict = dict(list(all_arguments.items())[11:])
+
+    return args_dict, config_dict, spark_dict
+
+
+
 def get_families(current_algo, ml_algo):
     """
     Given current algorithm we get its families.
@@ -141,7 +180,9 @@ def get_existence(path, action_mode):
     return exist
 
 
-def exec_dml_and_parse_time(exec_type, dml_file_name, execution_output_file, args, time=True):
+# TODO
+# Update Signature
+def exec_dml_and_parse_time(exec_type, dml_file_name, args, spark_args_dict, sup_args_dict, time=True):
     """
     This function is responsible of execution of input arguments via python sub process,
     We also extract time obtained from the output of this subprocess
@@ -152,9 +193,6 @@ def exec_dml_and_parse_time(exec_type, dml_file_name, execution_output_file, arg
     dml_file_name: String
     DML file name to be used while processing the arguments give
 
-    execution_output_file: String
-    Name of the file where the output of the DML run is written out
-
     args: Dictionary
     Key values pairs depending on the arg type
 
@@ -163,51 +201,62 @@ def exec_dml_and_parse_time(exec_type, dml_file_name, execution_output_file, arg
     """
 
     algorithm = dml_file_name + '.dml'
+
+    sup_args = ''.join(['{} {}'.format(k, v) for k, v in sup_args_dict.items()])
     if exec_type == 'singlenode':
         exec_script = join(os.environ.get('SYSTEMML_HOME'), 'bin', 'systemml-standalone.py')
 
         args = ''.join(['{} {}'.format(k, v) for k, v in args.items()])
-        cmd = [exec_script, algorithm, args]
+        cmd = [exec_script, '-f', algorithm, args, sup_args]
         cmd_string = ' '.join(cmd)
 
     if exec_type == 'hybrid_spark':
         exec_script = join(os.environ.get('SYSTEMML_HOME'), 'bin', 'systemml-spark-submit.py')
+        spark_pre_args = ''.join(['{} {}'.format(k, v) for k, v in spark_args_dict.items()])
         args = ''.join(['{} {}'.format(k, v) for k, v in args.items()])
-        cmd = [exec_script, '-f', algorithm, args]
+        cmd = [exec_script, spark_pre_args, '-f', algorithm, args, sup_args]
         cmd_string = ' '.join(cmd)
 
     # Debug
     # print(cmd_string)
 
     # Subprocess to execute input arguments
-    # proc1_log contains the shell output which is used for time parsing
     proc1 = subprocess.Popen(shlex.split(cmd_string), stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
-
     if time:
-        proc1_log = []
-        while proc1.poll() is None:
-            raw_std_out = proc1.stdout.readline()
-            decode_raw = raw_std_out.decode('ascii').strip()
-            proc1_log.append(decode_raw)
-            logging.log(10, decode_raw)
+        error_arr, out_arr = get_std_out(proc1)
+        std_outs = out_arr + error_arr
 
-        _, err1 = proc1.communicate()
-
+        out1, err1 = proc1.communicate()
         if "Error" in str(err1):
             print('Error Found in {}'.format(dml_file_name))
             total_time = 'failure'
         else:
-            total_time = parse_time(proc1_log)
-
-        with open(execution_output_file, 'w') as file:
-            for row in proc1_log:
-                file.write("%s\n" % str(row))
-
+            total_time = parse_time(std_outs)
     else:
         total_time = 'not_specified'
-
     return total_time
+
+
+# TODO
+# Signature
+def get_std_out(process):
+
+    out_arr = []
+    while True:
+        nextline = process.stdout.readline().decode('ascii').strip()
+        out_arr.append(nextline)
+        if nextline == '' and process.poll() is not None:
+            break
+
+    error_arr = []
+    while True:
+        nextline = process.stderr.readline().decode('ascii').strip()
+        error_arr.append(nextline)
+        if nextline == '' and process.poll() is not None:
+            break
+
+    return out_arr, error_arr
 
 
 def parse_time(raw_logs):
@@ -233,7 +282,7 @@ def parse_time(raw_logs):
     return 'time_not_found'
 
 
-def exec_test_data(exec_type, path):
+def exec_test_data(exec_type, spark_args_dict, sup_args_dict, path):
     """
     Creates the test data split from the given input path
 
@@ -251,9 +300,7 @@ def exec_test_data(exec_type, path):
     Y_test = join(path, 'Y_test.data')
     args = {'-args': ' '.join([X, Y, X_test, Y_test, 'csv'])}
 
-    # Call the exec script without time
-    config_file_name = path.split('/')[-1]
-    exec_dml_and_parse_time(exec_type, test_split_script, config_file_name, args, False)
+    exec_dml_and_parse_time(exec_type, test_split_script, args, spark_args_dict, sup_args_dict, False)
 
 
 def check_predict(current_algo, ml_predict):
