@@ -32,7 +32,7 @@ from datagen import config_packets_datagen
 from train import config_packets_train
 from predict import config_packets_predict
 from utils import get_families, config_reader, create_dir, get_existence, \
-    exec_dml_and_parse_time, exec_test_data, check_predict, get_folder_metrics
+    exec_dml_and_parse_time, exec_test_data, check_predict, get_folder_metrics, args_dict_split, sup_args
 
 
 # A packet is a dictionary
@@ -83,6 +83,8 @@ ML_PREDICT = {'Kmeans': 'Kmeans-predict',
 
 DENSE_TYPE_ALGOS = ['clustering', 'stats1', 'stats2']
 
+sup_args_dict = {}
+
 
 # Responsible for execution and metric logging
 def algorithm_workflow(algo, exec_type, config_path, dml_file_name, action_mode):
@@ -128,7 +130,7 @@ def algorithm_workflow(algo, exec_type, config_path, dml_file_name, action_mode)
         print('data already exists {}'.format(config_path))
         time = 'data_exists'
     else:
-        time = exec_dml_and_parse_time(exec_type, dml_file_name, config_file_name, args)
+        time = exec_dml_and_parse_time(exec_type, dml_file_name, args, spark_args_dict, sup_args_dict)
 
     # Write a _SUCCESS file only if time is found and in data-gen action_mode
     if len(time.split('.')) == 2 and action_mode == 'data-gen':
@@ -212,7 +214,7 @@ def perf_test_entry(family, algo, exec_type, mat_type, mat_shape, temp_dir, mode
                 algorithm_workflow(family_name, exec_type, config, file_name, 'data-gen')
                 # Statistic family do not require to be split
                 if family_name not in ['stats1', 'stats2']:
-                    exec_test_data(exec_type, config)
+                    exec_test_data(exec_type, spark_args_dict, sup_args_dict, config)
 
     if 'train' in mode:
         data_gen_dir = join(temp_dir, 'data-gen')
@@ -243,7 +245,6 @@ def perf_test_entry(family, algo, exec_type, mat_type, mat_shape, temp_dir, mode
                     algorithm_workflow(algo_name, exec_type, config, file_name, 'predict')
 
 if __name__ == '__main__':
-
     # sys ml env set and error handling
     systemml_home = os.environ.get('SYSTEMML_HOME')
     if systemml_home is None:
@@ -298,9 +299,28 @@ if __name__ == '__main__':
                          help='space separated list of types of workloads to run (available: data-gen, train, predict)',
                          metavar='', choices=workload, nargs='+')
 
+    # Configuration Options
+    cparser.add_argument('-stats', help='Monitor and report caching/recompilation statistics, '
+                                        'heavy hitter <count> is 10 unless overridden', nargs='?', const='10',
+                         metavar='')
+    cparser.add_argument('-explain', help='explains plan levels can be hops, runtime, '
+                                          'recompile_hops, recompile_runtime', nargs='?', const='runtime', metavar='')
+    cparser.add_argument('-config', help='System-ML configuration file (e.g SystemML-config.xml)', metavar='')
+
+    # Spark Configuration Option
+    cparser.add_argument('--master', help='local, yarn-client, yarn-cluster', metavar='')
+    cparser.add_argument('--driver-memory', help='Memory for driver (e.g. 512M)', metavar='')
+    cparser.add_argument('--num-executors', help='Number of executors to launch', metavar='')
+    cparser.add_argument('--executor-memory', help='Memory per executor', metavar='')
+    cparser.add_argument('--executor-cores', help='Number of cores', metavar='')
+    cparser.add_argument('--conf', help='Spark configuration file', nargs='+', metavar='')
+
     # Args is a namespace
     args = cparser.parse_args()
-    arg_dict = vars(args)
+    all_arg_dict = vars(args)
+
+    arg_dict, config_dict, spark_dict = args_dict_split(all_arg_dict)
+    sup_args_dict, spark_args_dict = sup_args(config_dict, spark_dict, args.exec_type)
 
     # Debug arguments
     # print(arg_dict)

@@ -39,13 +39,18 @@ def default_jars(systemml_home):
 # TODO:
 # Test config
 # add comments
+# Argparse add default and options
+# Windows Support
 def spark_submit_entry(master, driver_memory, num_executors, executor_memory,
-                       executor_cores, conf, cuda_jars, systemml_jars,
+                       executor_cores, conf,
                        nvargs, args, config, explain, debug, stats, gpu, f):
 
     spark_home, systemml_home = get_env()
     spark_path = join(spark_home, 'bin', 'spark-submit')
     script_file = find_script_file(systemml_home, f)
+
+    # Jars
+    cuda_jars, systemml_jars = default_jars(systemml_home)
 
     # Log4j
     log4j = log4j_path(systemml_home)
@@ -129,13 +134,6 @@ if __name__ == '__main__':
 
     args = cparser.parse_args()
     arg_dict = vars(args)
-
-    # Default Initialization
-    target_jars, systemml_jar = default_jars(systemml_home)
-
-    # Set additional arguments
-    arg_dict['cuda_jars'] = target_jars
-    arg_dict['systemml_jars'] = systemml_jar
 
     return_code = spark_submit_entry(**arg_dict)
 
