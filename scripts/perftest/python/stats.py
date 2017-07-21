@@ -19,34 +19,82 @@
 # under the License.
 #
 # -------------------------------------------------------------
+
 import pandas as pd
 import argparse
+import gspread
+import pprint
+from oauth2client.service_account import ServiceAccountCredentials
+from functools import reduce
 
-def get_dataframe(path):
-    current_perf = pd.read_csv(path, sep=',', skiprows=1, skipfooter=1, engine='python')
-    return current_perf
+
+def auth(path, sheet_name):
+    scope = ['https://spreadsheets.google.com/feeds']
+    creds = ServiceAccountCredentials.from_json_keyfile_name(path, scope)
+    gc = gspread.authorize(creds)
+    sheet = gc.open("Perf").worksheet(sheet_name)
+    return sheet
+
+
+def get_data(sheet, tag):
+    time = sheet.find('time_{}'.format(tag))
+    algo = sheet.find('algo_{}'.format(tag))
+
+    time_col = sheet.col_values(time.col)
+    time_col = list(filter(lambda x: len(x) > 0, time_col))
+
+    algo_col = sheet.col_values(algo.col)
+    algo_col = list(filter(lambda x: len(x) > 0, algo_col))
+    return algo_col, time_col
+
+
+def get_data_dict(data_col):
+    data_dict = {}
+    all_algo = []
+    for algo, _ in data_col:
+        all_algo.append(algo)
+
+    flatten_algo = reduce(lambda x, y: x+y, all_algo)
+    filter_data = list(filter(lambda x: not x.startswith('algo_'), flatten_algo))
+    distict_algos = set(filter_data)
+
+    for algo_dist in distict_algos:
+        for algo, time in data_col:
+            for k, v in zip(algo, time):
+                if algo_dist == k:
+                    if algo_dist not in data_dict:
+                        data_dict[k] = [v]
+                    else:
+                        data_dict[k].append(v)
+    return data_dict
 
 
 if __name__ == '__main__':
+    execution_mode = ['hybrid_spark', 'singlenode']
+
     cparser = argparse.ArgumentParser(description='System-ML Statistics Script')
-    cparser.add_argument('--current', help='Location of the current perf test outputs',
+    cparser.add_argument('--auth', help='Location to read auth file',
                          required=True, metavar='')
-    cparser.add_argument('--old', help='Location of the old perf test outputs',
+    cparser.add_argument('--backend', help='Backend Type', choices=execution_mode,
                          required=True, metavar='')
-    cparser.add_argument('--write', help='Location to write statistics',
-                         required=True, metavar='')
+    cparser.add_argument('--tags', help='Tagging header value',
+                         required=True, nargs='+')
 
     args = cparser.parse_args()
     arg_dict = vars(args)
-    print(arg_dict)
-    current_perf = get_dataframe(arg_dict.current)
-    old_perf = get_dataframe(arg_dict.old)
+    sheet = auth(args.auth, args.backend)
+    all_data = sheet.get_all_records()
 
-    delta_time = current_perf['time_sec'] - old_perf['time_sec']
-    change = (delta_time / old_perf['time_sec']) * 100
+    data_col = []
+    for tag in args.tags:
+        algo_col, time_col = get_data(sheet, tag)
+        data_col.append((algo_col, time_col))
 
-    stats_df = {'algo': current_perf.ix[:,0], 'delta': delta_time, 'change': change}
-    df = pd.DataFrame(stats_df)
+    data_dict = get_data_dict(data_col)
 
-    print(df)
-    df.to_csv(write_path, index=False)
+    delta_algo = {}
+    for k, v in data_dict.items():
+        delta = float(v[0]) - float(v[1])
+        delta_algo[k] = delta
+
+    pprint.pprint(delta_algo, width=1)
