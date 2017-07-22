@@ -31,9 +31,10 @@ from datetime import datetime
 from datagen import config_packets_datagen
 from train import config_packets_train
 from predict import config_packets_predict
-from utils import get_families, config_reader, create_dir, get_existence, \
-    exec_dml_and_parse_time, exec_test_data, check_predict, get_folder_metrics, args_dict_split, sup_args
-
+from utils import get_families, config_reader, get_existence, \
+    exec_dml_and_parse_time, exec_test_data, check_predict, get_folder_metrics, args_dict_split, \
+    sup_args, write_success
+from file_system import create_dir_local
 
 # A packet is a dictionary
 # with key as the algorithm
@@ -94,7 +95,6 @@ def algorithm_workflow(algo, exec_type, config_path, dml_file_name, action_mode)
     Execution and time
     Logging Metrics
 
-
     algo : String
     Input algorithm specified
 
@@ -123,8 +123,7 @@ def algorithm_workflow(algo, exec_type, config_path, dml_file_name, action_mode)
 
     config_file_name = config_path.split('/')[-1]
     mat_type, mat_shape, intercept = get_folder_metrics(config_file_name, action_mode)
-
-    exit_flag_success = get_existence(config_path, action_mode)
+    exit_flag_success = get_existence(config_path, action_mode, fs)
 
     if exit_flag_success:
         print('data already exists {}'.format(config_path))
@@ -132,18 +131,16 @@ def algorithm_workflow(algo, exec_type, config_path, dml_file_name, action_mode)
     else:
         time = exec_dml_and_parse_time(exec_type, dml_file_name, args, spark_args_dict, sup_args_dict)
 
-    # Write a _SUCCESS file only if time is found and in data-gen action_mode
-    if len(time.split('.')) == 2 and action_mode == 'data-gen':
-        full_path = join(config_path, '_SUCCESS')
-        open(full_path, 'w').close()
+    write_success(time, config_path, action_mode, fs)
 
     print('{},{},{},{},{},{}'.format(algo, action_mode, intercept, mat_type, mat_shape, time))
     current_metrics = [algo, action_mode, intercept, mat_type, mat_shape, time]
     logging.info(','.join(current_metrics))
 
-
+# TODO
+# Add fs sig
 # Perf test entry point
-def perf_test_entry(family, algo, exec_type, mat_type, mat_shape, temp_dir, mode):
+def perf_test_entry(family, algo, exec_type, mat_type, mat_shape, temp_dir, mode, fs):
     """
     This function is the entry point for performance testing
 
@@ -205,13 +202,14 @@ def perf_test_entry(family, algo, exec_type, mat_type, mat_shape, temp_dir, mode
 
     if 'data-gen' in mode:
         data_gen_dir = join(temp_dir, 'data-gen')
-        create_dir(data_gen_dir)
+        create_dir_local(data_gen_dir)
         conf_packet = config_packets_datagen(algos_to_run, mat_type, mat_shape, data_gen_dir,
-                                             DENSE_TYPE_ALGOS)
+                                             DENSE_TYPE_ALGOS, fs)
         for family_name, config_folders in conf_packet.items():
             for config in config_folders:
                 file_name = ML_GENDATA[family_name]
                 algorithm_workflow(family_name, exec_type, config, file_name, 'data-gen')
+
                 # Statistic family do not require to be split
                 if family_name not in ['stats1', 'stats2']:
                     exec_test_data(exec_type, spark_args_dict, sup_args_dict, config)
@@ -244,6 +242,7 @@ def perf_test_entry(family, algo, exec_type, mat_type, mat_shape, temp_dir, mode
                     file_name = ML_PREDICT[algo_name]
                     algorithm_workflow(algo_name, exec_type, config, file_name, 'predict')
 
+# ./run_perftest.py --family clustering --fs hdfs://localhost:9000
 if __name__ == '__main__':
     # sys ml env set and error handling
     systemml_home = os.environ.get('SYSTEMML_HOME')
@@ -260,7 +259,6 @@ if __name__ == '__main__':
 
     # Default temp directory, contains everything generated in perftest
     default_temp_dir = join(systemml_home, 'scripts', 'perftest', 'temp')
-    create_dir(default_temp_dir)
 
     # Initialize time
     start_time = time.time()
@@ -298,6 +296,8 @@ if __name__ == '__main__':
     cparser.add_argument('--mode', default=workload,
                          help='space separated list of types of workloads to run (available: data-gen, train, predict)',
                          metavar='', choices=workload, nargs='+')
+    cparser.add_argument('--fs', default='',
+                         help='define the file system to work on', metavar='')
 
     # Configuration Options
     cparser.add_argument('-stats', help='Monitor and report caching/recompilation statistics, '
@@ -318,9 +318,13 @@ if __name__ == '__main__':
     # Args is a namespace
     args = cparser.parse_args()
     all_arg_dict = vars(args)
-
     arg_dict, config_dict, spark_dict = args_dict_split(all_arg_dict)
+
+    create_dir_local(default_temp_dir)
+
+    # Global variables
     sup_args_dict, spark_args_dict = sup_args(config_dict, spark_dict, args.exec_type)
+    fs = args.fs
 
     # Debug arguments
     # print(arg_dict)
