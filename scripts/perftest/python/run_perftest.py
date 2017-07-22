@@ -31,10 +31,10 @@ from datetime import datetime
 from datagen import config_packets_datagen
 from train import config_packets_train
 from predict import config_packets_predict
-from utils import get_families, config_reader, get_existence, \
+from utils import get_families, config_reader, \
     exec_dml_and_parse_time, exec_test_data, check_predict, get_folder_metrics, args_dict_split, \
-    sup_args, write_success
-from file_system import create_dir_local
+    sup_args
+from file_system import create_dir_local, write_success, get_existence
 
 # A packet is a dictionary
 # with key as the algorithm
@@ -110,7 +110,6 @@ def algorithm_workflow(algo, exec_type, config_path, dml_file_name, action_mode)
     action_mode : String
     Type of action data-gen, train ...
     """
-
     config_data = config_reader(config_path + '.json')
 
     if isinstance(config_data, dict):
