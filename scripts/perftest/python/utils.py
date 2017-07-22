@@ -65,9 +65,9 @@ def sup_args(config_dict, spark_dict, exec_type):
 
 
 def args_dict_split(all_arguments):
-    args_dict = dict(list(all_arguments.items())[0:8])
-    config_dict = dict(list(all_arguments.items())[8:11])
-    spark_dict = dict(list(all_arguments.items())[11:])
+    args_dict = dict(list(all_arguments.items())[0:9])
+    config_dict = dict(list(all_arguments.items())[9:12])
+    spark_dict = dict(list(all_arguments.items())[12:])
 
     return args_dict, config_dict, spark_dict
 
@@ -143,19 +143,7 @@ def config_reader(read_path):
     return conf_file
 
 
-def create_dir(directory):
-    """
-    Create directory given path if the directory does not exist already
-
-    directory: String
-    Input folder path
-    """
-
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-
-def get_existence(path, action_mode):
+def get_existence(path, action_mode, fs):
     """
     Check SUCCESS file is present in the input path
 
@@ -169,15 +157,23 @@ def get_existence(path, action_mode):
     """
 
     if action_mode == 'data-gen':
-        full_path = join(path, '_SUCCESS')
-        exist = os.path.isfile(full_path)
-    else:
-        # Files does not exist for other modes return False to continue
-        # For e.g some predict algorithms do not generate an output folder
-        # hence checking for SUCCESS would fail
-        exist = False
 
-    return exist
+        if fs.startswith('hdfs'):
+            full_path = join(fs, action_mode, path.split('/')[-1], '_SUCCESS')
+            cmd = ['hdfs', 'dfs', '-test', '-e', full_path]
+            return_code = os.system(' '.join(cmd))
+            if return_code != 0:
+                return False
+        else:
+            full_path = join(path, '_SUCCESS')
+            exist = os.path.isfile(full_path)
+            if not exist:
+                # Files does not exist for other modes return False to continue
+                # For e.g some predict algorithms do not generate an output folder
+                # hence checking for SUCCESS would fail
+                exist = False
+
+    return True
 
 
 # TODO
@@ -435,3 +431,27 @@ def relevant_folders(path, algo, family, matrix_type, matrix_shape, mode):
     folders_flat = reduce(lambda x, y: x + y, folders)
 
     return folders_flat
+
+
+def strip_if_hdfs(path):
+    if path.startswith('hdfs'):
+        split_path = path.split('/')
+        return_path = '/' + '/'.join(split_path[3:])
+    else:
+        return_path = path
+
+    return return_path
+
+
+def write_success(time, config_path, action_mode, fs):
+
+    if action_mode == 'data-gen':
+        if fs.startswith('hdfs') and len(time.split('.')) == 2:
+            full_path = join(fs, action_mode, config_path.split('/')[-1], '_SUCCESS')
+            cmd = ['hdfs', 'dfs', '-touchz', full_path]
+            os.system(' '.join(cmd))
+        else:
+            # Write a _SUCCESS file only if time is found and in data-gen action_mode
+            if len(time.split('.')) == 2:
+                full_path = join(config_path, '_SUCCESS')
+                open(full_path, 'w').close()
