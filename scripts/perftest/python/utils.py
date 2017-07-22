@@ -143,39 +143,6 @@ def config_reader(read_path):
     return conf_file
 
 
-def get_existence(path, action_mode, fs):
-    """
-    Check SUCCESS file is present in the input path
-
-    path: String
-    Input folder path
-
-    action_mode : String
-    Type of action data-gen, train ...
-
-    return: Boolean check if the file _SUCCESS exists
-    """
-
-    if action_mode == 'data-gen':
-
-        if fs.startswith('hdfs'):
-            full_path = join(fs, action_mode, path.split('/')[-1], '_SUCCESS')
-            cmd = ['hdfs', 'dfs', '-test', '-e', full_path]
-            return_code = os.system(' '.join(cmd))
-            if return_code != 0:
-                return False
-        else:
-            full_path = join(path, '_SUCCESS')
-            exist = os.path.isfile(full_path)
-            if not exist:
-                # Files does not exist for other modes return False to continue
-                # For e.g some predict algorithms do not generate an output folder
-                # hence checking for SUCCESS would fail
-                exist = False
-
-    return True
-
-
 # TODO
 # Update Signature
 def exec_dml_and_parse_time(exec_type, dml_file_name, args, spark_args_dict, sup_args_dict, time=True):
@@ -433,25 +400,4 @@ def relevant_folders(path, algo, family, matrix_type, matrix_shape, mode):
     return folders_flat
 
 
-def strip_if_hdfs(path):
-    if path.startswith('hdfs'):
-        split_path = path.split('/')
-        return_path = '/' + '/'.join(split_path[3:])
-    else:
-        return_path = path
 
-    return return_path
-
-
-def write_success(time, config_path, action_mode, fs):
-
-    if action_mode == 'data-gen':
-        if fs.startswith('hdfs') and len(time.split('.')) == 2:
-            full_path = join(fs, action_mode, config_path.split('/')[-1], '_SUCCESS')
-            cmd = ['hdfs', 'dfs', '-touchz', full_path]
-            os.system(' '.join(cmd))
-        else:
-            # Write a _SUCCESS file only if time is found and in data-gen action_mode
-            if len(time.split('.')) == 2:
-                full_path = join(config_path, '_SUCCESS')
-                open(full_path, 'w').close()

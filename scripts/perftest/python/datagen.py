@@ -24,6 +24,7 @@ import itertools
 from os.path import join
 from utils import split_rowcol, config_writer, mat_type_check
 
+
 # This file contains configuration settings for data generation
 DATA_FORMAT = 'csv'
 
@@ -34,10 +35,15 @@ FAMILY_NO_MATRIX_TYPE = ['clustering', 'stats1', 'stats2']
 
 
 def multinomial_datagen(matrix_dim, matrix_type, datagen_dir):
-
-    row, col = split_rowcol(matrix_dim)
     path_name = '.'.join(['multinomial', matrix_type, str(matrix_dim)])
-    full_path = join(datagen_dir, path_name)
+    if len(datagen_dir) == 2:
+        datagen_dir,  hdfs_path = datagen_dir
+        full_path = join(hdfs_path, 'data-gen', path_name)
+        save_path = join(datagen_dir, path_name)
+    else:
+        save_path = join(datagen_dir, path_name)
+        full_path = save_path
+    row, col = split_rowcol(matrix_dim)
 
     numSamples = row
     numFeatures = col
@@ -51,16 +57,21 @@ def multinomial_datagen(matrix_dim, matrix_type, datagen_dir):
     config = [numSamples, numFeatures, sparsity, num_categories, intercept,
               X, Y, fmt, '1']
 
-    config_writer(full_path + '.json', config)
+    config_writer(save_path + '.json', config)
 
-    return full_path
+    return save_path
 
 
 def binomial_datagen(matrix_dim, matrix_type, datagen_dir):
-
-    row, col = split_rowcol(matrix_dim)
     path_name = '.'.join(['binomial', matrix_type, str(matrix_dim)])
-    full_path = join(datagen_dir, path_name)
+    if len(datagen_dir) == 2:
+        datagen_dir, hdfs_path = datagen_dir
+        full_path = join(hdfs_path, 'data-gen', path_name)
+        save_path = join(datagen_dir, path_name)
+    else:
+        save_path = join(datagen_dir, path_name)
+        full_path = save_path
+    row, col = split_rowcol(matrix_dim)
 
     numSamples = row
     numFeatures = col
@@ -77,16 +88,21 @@ def binomial_datagen(matrix_dim, matrix_type, datagen_dir):
 
     config = [numSamples, numFeatures, maxFeatureValue, maxWeight, loc_weights, loc_data,
               loc_labels, noise, intercept, sparsity, fmt, tranform_labels]
-    config_writer(full_path + '.json', config)
+    config_writer(save_path + '.json', config)
 
-    return full_path
+    return save_path
 
 
 def regression1_datagen(matrix_dim, matrix_type, datagen_dir):
-
-    row, col = split_rowcol(matrix_dim)
     path_name = '.'.join(['regression1', matrix_type, str(matrix_dim)])
-    full_path = join(datagen_dir, path_name)
+    if len(datagen_dir) == 2:
+        datagen_dir, hdfs_path = datagen_dir
+        full_path = join(hdfs_path, 'data-gen', path_name)
+        save_path = join(datagen_dir, path_name)
+    else:
+        save_path = join(datagen_dir, path_name)
+        full_path = save_path
+    row, col = split_rowcol(matrix_dim)
 
     numSamples = row
     numFeatures = col
@@ -103,16 +119,21 @@ def regression1_datagen(matrix_dim, matrix_type, datagen_dir):
 
     config = [numSamples, numFeatures, maxFeatureValue, maxWeight, loc_weights, loc_data,
               loc_labels, noise, intercept, sparsity, fmt, tranform_labels]
-    config_writer(full_path + '.json', config)
+    config_writer(save_path + '.json', config)
 
-    return full_path
+    return save_path
 
 
 def regression2_datagen(matrix_dim, matrix_type, datagen_dir):
-
-    row, col = split_rowcol(matrix_dim)
     path_name = '.'.join(['regression2', matrix_type, str(matrix_dim)])
-    full_path = join(datagen_dir, path_name)
+    if len(datagen_dir) == 2:
+        datagen_dir, hdfs_path = datagen_dir
+        full_path = join(hdfs_path, 'data-gen', path_name)
+        save_path = join(datagen_dir, path_name)
+    else:
+        save_path = join(datagen_dir, path_name)
+        full_path = save_path
+    row, col = split_rowcol(matrix_dim)
 
     numSamples = row
     numFeatures = col
@@ -129,17 +150,24 @@ def regression2_datagen(matrix_dim, matrix_type, datagen_dir):
 
     config = [numSamples, numFeatures, maxFeatureValue, maxWeight, loc_weights, loc_data,
               loc_labels, noise, intercept, sparsity, fmt, tranform_labels]
-    config_writer(full_path + '.json', config)
+    config_writer(save_path + '.json', config)
 
-    return full_path
+    return save_path
 
 
 def clustering_datagen(matrix_dim, matrix_type, datagen_dir):
 
-    row, col = split_rowcol(matrix_dim)
     path_name = '.'.join(['clustering', matrix_type, str(matrix_dim)])
+    if len(datagen_dir) == 2:
+        datagen_dir,  hdfs_path = datagen_dir
+        full_path = join(hdfs_path, 'data-gen', path_name)
+        save_path = join(datagen_dir, path_name)
+    else:
+        save_path = join(datagen_dir, path_name)
+        full_path = save_path
 
-    full_path = join(datagen_dir, path_name)
+    row, col = split_rowcol(matrix_dim)
+
     X = join(full_path, 'X.data')
     Y = join(full_path, 'Y.data')
     YbyC = join(full_path, 'YbyC.data')
@@ -153,15 +181,21 @@ def clustering_datagen(matrix_dim, matrix_type, datagen_dir):
     config = dict(nr=row, nf=col, nc=nc, dc=dc, dr=dr, fbf=fbf, cbf=cbf, X=X, C=C, Y=Y,
                   YbyC=YbyC, fmt=DATA_FORMAT)
 
-    config_writer(full_path + '.json', config)
-    return full_path
+    config_writer(save_path + '.json', config)
+    return save_path
 
 
 def stats1_datagen(matrix_dim, matrix_type, datagen_dir):
 
-    row, col = split_rowcol(matrix_dim)
     path_name = '.'.join(['stats1', matrix_type, str(matrix_dim)])
-    full_path = join(datagen_dir, path_name)
+    if len(datagen_dir) == 2:
+        datagen_dir, hdfs_path = datagen_dir
+        full_path = join(hdfs_path, 'data-gen', path_name)
+        save_path = join(datagen_dir, path_name)
+    else:
+        save_path = join(datagen_dir, path_name)
+        full_path = save_path
+    row, col = split_rowcol(matrix_dim)
 
     DATA = join(full_path, 'X.data')
     TYPES = join(full_path, 'types')
@@ -184,16 +218,22 @@ def stats1_datagen(matrix_dim, matrix_type, datagen_dir):
                   LABELSETSIZE=LABELSETSIZE, TYPES1=TYPES1, TYPES2=TYPES2, INDEX1=INDEX1,
                   INDEX2=INDEX2, fmt=DATA_FORMAT)
 
-    config_writer(full_path + '.json', config)
+    config_writer(save_path + '.json', config)
 
-    return full_path
+    return save_path
 
 
 def stats2_datagen(matrix_dim, matrix_type, datagen_dir):
 
-    row, col = split_rowcol(matrix_dim)
     path_name = '.'.join(['stats2', matrix_type, str(matrix_dim)])
-    full_path = join(datagen_dir, path_name)
+    if len(datagen_dir) == 2:
+        datagen_dir, hdfs_path = datagen_dir
+        full_path = join(hdfs_path, 'data-gen', path_name)
+        save_path = join(datagen_dir, path_name)
+    else:
+        save_path = join(datagen_dir, path_name)
+        full_path = save_path
+    row, col = split_rowcol(matrix_dim)
 
     D = join(full_path, 'X.data')
     Xcid = join(full_path, 'Xcid.data')
@@ -203,11 +243,13 @@ def stats2_datagen(matrix_dim, matrix_type, datagen_dir):
     config = dict(nr=row, nf=col, D=D, Xcid=Xcid, Ycid=Ycid,
                   A=A, fmt=DATA_FORMAT)
 
-    config_writer(full_path + '.json', config)
-    return full_path
+    config_writer(save_path + '.json', config)
+    return save_path
 
 
-def config_packets_datagen(algo_payload, matrix_type, matrix_shape, datagen_dir, dense_algos):
+# TODO
+# FS signature
+def config_packets_datagen(algo_payload, matrix_type, matrix_shape, datagen_dir, dense_algos, fs):
     """
     This function has two responsibilities. Generate the configuration files for
     datagen algorithms and return a dictionary that will be used for execution.
@@ -232,9 +274,10 @@ def config_packets_datagen(algo_payload, matrix_type, matrix_shape, datagen_dir,
     This dictionary contains algorithms to be executed as keys and the path of configuration
     json files to be executed list of values.
     """
+    if fs.startswith('hdfs'):
+        datagen_dir = [datagen_dir, fs]
 
     config_bundle = {}
-
     distinct_families = set(map(lambda x: x[1], algo_payload))
 
     # Cross Product of all configurations
