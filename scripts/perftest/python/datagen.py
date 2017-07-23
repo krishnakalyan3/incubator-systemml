@@ -194,7 +194,7 @@ def stats1_datagen(matrix_dim, matrix_type, datagen_dir):
         save_path = join(datagen_dir, path_name)
     else:
         save_path = join(datagen_dir, path_name)
-        full_path = save_path
+        full_path = join(datagen_dir, path_name)
     row, col = split_rowcol(matrix_dim)
 
     DATA = join(full_path, 'X.data')
