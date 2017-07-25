@@ -34,15 +34,11 @@ MATRIX_TYPE_DICT = {'dense': '0.9',
 FAMILY_NO_MATRIX_TYPE = ['clustering', 'stats1', 'stats2']
 
 
-def multinomial_datagen(matrix_dim, matrix_type, datagen_dir):
+def multinomial_datagen(matrix_dim, matrix_type, datagen_dir, config_dir):
     path_name = '.'.join(['multinomial', matrix_type, str(matrix_dim)])
-    if len(datagen_dir) == 2:
-        datagen_dir,  hdfs_path = datagen_dir
-        full_path = join(hdfs_path, 'data-gen', path_name)
-        save_path = join(datagen_dir, path_name)
-    else:
-        save_path = join(datagen_dir, path_name)
-        full_path = save_path
+    datagen_write = join(datagen_dir, path_name)
+    save_path = join(config_dir, path_name)
+
     row, col = split_rowcol(matrix_dim)
 
     numSamples = row
@@ -50,8 +46,8 @@ def multinomial_datagen(matrix_dim, matrix_type, datagen_dir):
     sparsity = MATRIX_TYPE_DICT[matrix_type]
     num_categories = '150'
     intercept = '0'
-    X = join(full_path, 'X.data')
-    Y = join(full_path, 'Y.data')
+    X = join(datagen_write, 'X.data')
+    Y = join(datagen_write, 'Y.data')
     fmt = DATA_FORMAT
 
     config = [numSamples, numFeatures, sparsity, num_categories, intercept,
@@ -62,24 +58,20 @@ def multinomial_datagen(matrix_dim, matrix_type, datagen_dir):
     return save_path
 
 
-def binomial_datagen(matrix_dim, matrix_type, datagen_dir):
+def binomial_datagen(matrix_dim, matrix_type, datagen_dir, config_dir):
     path_name = '.'.join(['binomial', matrix_type, str(matrix_dim)])
-    if len(datagen_dir) == 2:
-        datagen_dir, hdfs_path = datagen_dir
-        full_path = join(hdfs_path, 'data-gen', path_name)
-        save_path = join(datagen_dir, path_name)
-    else:
-        save_path = join(datagen_dir, path_name)
-        full_path = save_path
+    datagen_write = join(datagen_dir, path_name)
+    save_path = join(config_dir, path_name)
+
     row, col = split_rowcol(matrix_dim)
 
     numSamples = row
     numFeatures = col
     maxFeatureValue = '5'
     maxWeight = '5'
-    loc_weights = join(full_path, 'weight.data')
-    loc_data = join(full_path, 'X.data')
-    loc_labels = join(full_path, 'Y.data')
+    loc_weights = join(datagen_write, 'weight.data')
+    loc_data = join(datagen_write, 'X.data')
+    loc_labels = join(datagen_write, 'Y.data')
     noise = '1'
     intercept = '0'
     sparsity = MATRIX_TYPE_DICT[matrix_type]
@@ -93,24 +85,20 @@ def binomial_datagen(matrix_dim, matrix_type, datagen_dir):
     return save_path
 
 
-def regression1_datagen(matrix_dim, matrix_type, datagen_dir):
+def regression1_datagen(matrix_dim, matrix_type, datagen_dir, config_dir):
     path_name = '.'.join(['regression1', matrix_type, str(matrix_dim)])
-    if len(datagen_dir) == 2:
-        datagen_dir, hdfs_path = datagen_dir
-        full_path = join(hdfs_path, 'data-gen', path_name)
-        save_path = join(datagen_dir, path_name)
-    else:
-        save_path = join(datagen_dir, path_name)
-        full_path = save_path
+    datagen_write = join(datagen_dir, path_name)
+    save_path = join(config_dir, path_name)
+
     row, col = split_rowcol(matrix_dim)
 
     numSamples = row
     numFeatures = col
     maxFeatureValue = '5'
     maxWeight = '5'
-    loc_weights = join(full_path, 'weight.data')
-    loc_data = join(full_path, 'X.data')
-    loc_labels = join(full_path, 'Y.data')
+    loc_weights = join(datagen_write, 'weight.data')
+    loc_data = join(datagen_write, 'X.data')
+    loc_labels = join(datagen_write, 'Y.data')
     noise = '1'
     intercept = '0'
     sparsity = MATRIX_TYPE_DICT[matrix_type]
@@ -124,24 +112,20 @@ def regression1_datagen(matrix_dim, matrix_type, datagen_dir):
     return save_path
 
 
-def regression2_datagen(matrix_dim, matrix_type, datagen_dir):
+def regression2_datagen(matrix_dim, matrix_type, datagen_dir, config_dir):
     path_name = '.'.join(['regression2', matrix_type, str(matrix_dim)])
-    if len(datagen_dir) == 2:
-        datagen_dir, hdfs_path = datagen_dir
-        full_path = join(hdfs_path, 'data-gen', path_name)
-        save_path = join(datagen_dir, path_name)
-    else:
-        save_path = join(datagen_dir, path_name)
-        full_path = save_path
+    datagen_write = join(datagen_dir, path_name)
+    save_path = join(config_dir, path_name)
+
     row, col = split_rowcol(matrix_dim)
 
     numSamples = row
     numFeatures = col
     maxFeatureValue = '5'
     maxWeight = '5'
-    loc_weights = join(full_path, 'weight.data')
-    loc_data = join(full_path, 'X.data')
-    loc_labels = join(full_path, 'Y.data')
+    loc_weights = join(datagen_write, 'weight.data')
+    loc_data = join(datagen_write, 'X.data')
+    loc_labels = join(datagen_write, 'Y.data')
     noise = '1'
     intercept = '0'
     sparsity = MATRIX_TYPE_DICT[matrix_type]
@@ -155,23 +139,17 @@ def regression2_datagen(matrix_dim, matrix_type, datagen_dir):
     return save_path
 
 
-def clustering_datagen(matrix_dim, matrix_type, datagen_dir):
+def clustering_datagen(matrix_dim, matrix_type, datagen_dir, config_dir):
 
     path_name = '.'.join(['clustering', matrix_type, str(matrix_dim)])
-    if len(datagen_dir) == 2:
-        datagen_dir,  hdfs_path = datagen_dir
-        full_path = join(hdfs_path, 'data-gen', path_name)
-        save_path = join(datagen_dir, path_name)
-    else:
-        save_path = join(datagen_dir, path_name)
-        full_path = save_path
-
+    datagen_write = join(datagen_dir, path_name)
+    save_path = join(config_dir, path_name)
     row, col = split_rowcol(matrix_dim)
 
-    X = join(full_path, 'X.data')
-    Y = join(full_path, 'Y.data')
-    YbyC = join(full_path, 'YbyC.data')
-    C = join(full_path, 'C.data')
+    X = join(datagen_write, 'X.data')
+    Y = join(datagen_write, 'Y.data')
+    YbyC = join(datagen_write, 'YbyC.data')
+    C = join(datagen_write, 'C.data')
     nc = '50'
     dc = '10.0'
     dr = '1.0'
@@ -185,24 +163,20 @@ def clustering_datagen(matrix_dim, matrix_type, datagen_dir):
     return save_path
 
 
-def stats1_datagen(matrix_dim, matrix_type, datagen_dir):
+def stats1_datagen(matrix_dim, matrix_type, datagen_dir, config_dir):
 
     path_name = '.'.join(['stats1', matrix_type, str(matrix_dim)])
-    if len(datagen_dir) == 2:
-        datagen_dir, hdfs_path = datagen_dir
-        full_path = join(hdfs_path, 'data-gen', path_name)
-        save_path = join(datagen_dir, path_name)
-    else:
-        save_path = join(datagen_dir, path_name)
-        full_path = join(datagen_dir, path_name)
+    datagen_write = join(datagen_dir, path_name)
+    save_path = join(config_dir, path_name)
+
     row, col = split_rowcol(matrix_dim)
 
-    DATA = join(full_path, 'X.data')
-    TYPES = join(full_path, 'types')
-    TYPES1 = join(full_path, 'set1.types')
-    TYPES2 = join(full_path, 'set2.types')
-    INDEX1 = join(full_path, 'set1.indices')
-    INDEX2 = join(full_path, 'set2.indices')
+    DATA = join(datagen_write, 'X.data')
+    TYPES = join(datagen_write, 'types')
+    TYPES1 = join(datagen_write, 'set1.types')
+    TYPES2 = join(datagen_write, 'set2.types')
+    INDEX1 = join(datagen_write, 'set1.indices')
+    INDEX2 = join(datagen_write, 'set2.indices')
     MAXDOMAIN = '1100'
     SETSIZE = '20'
     LABELSETSIZE = '10'
@@ -223,22 +197,17 @@ def stats1_datagen(matrix_dim, matrix_type, datagen_dir):
     return save_path
 
 
-def stats2_datagen(matrix_dim, matrix_type, datagen_dir):
+def stats2_datagen(matrix_dim, matrix_type, datagen_dir, config_dir):
 
     path_name = '.'.join(['stats2', matrix_type, str(matrix_dim)])
-    if len(datagen_dir) == 2:
-        datagen_dir, hdfs_path = datagen_dir
-        full_path = join(hdfs_path, 'data-gen', path_name)
-        save_path = join(datagen_dir, path_name)
-    else:
-        save_path = join(datagen_dir, path_name)
-        full_path = save_path
+    datagen_write = join(datagen_dir, path_name)
+    save_path = join(config_dir, path_name)
     row, col = split_rowcol(matrix_dim)
 
-    D = join(full_path, 'X.data')
-    Xcid = join(full_path, 'Xcid.data')
-    Ycid = join(full_path, 'Ycid.data')
-    A = join(full_path, 'A.data')
+    D = join(datagen_write, 'X.data')
+    Xcid = join(datagen_write, 'Xcid.data')
+    Ycid = join(datagen_write, 'Ycid.data')
+    A = join(datagen_write, 'A.data')
 
     config = dict(nr=row, nf=col, D=D, Xcid=Xcid, Ycid=Ycid,
                   A=A, fmt=DATA_FORMAT)
@@ -247,9 +216,7 @@ def stats2_datagen(matrix_dim, matrix_type, datagen_dir):
     return save_path
 
 
-# TODO
-# FS signature
-def config_packets_datagen(algo_payload, matrix_type, matrix_shape, datagen_dir, dense_algos, fs):
+def config_packets_datagen(algo_payload, matrix_type, matrix_shape, datagen_dir, dense_algos, config_dir):
     """
     This function has two responsibilities. Generate the configuration files for
     datagen algorithms and return a dictionary that will be used for execution.
@@ -270,13 +237,13 @@ def config_packets_datagen(algo_payload, matrix_type, matrix_shape, datagen_dir,
     dense_algos: List
     Algorithms that support only dense matrix type
 
+    config_dir: String
+    Location to store
+
     return: Dictionary {string: list}
     This dictionary contains algorithms to be executed as keys and the path of configuration
     json files to be executed list of values.
     """
-    if fs.startswith('hdfs'):
-        datagen_dir = [datagen_dir, fs]
-
     config_bundle = {}
     distinct_families = set(map(lambda x: x[1], algo_payload))
 
@@ -292,7 +259,7 @@ def config_packets_datagen(algo_payload, matrix_type, matrix_shape, datagen_dir,
         config_packets[current_family] = []
         for size, type in configs:
             family_func = current_family.lower() + '_datagen'
-            conf_path = globals()[family_func](size, type, datagen_dir)
+            conf_path = globals()[family_func](size, type, datagen_dir, config_dir)
             config_packets[current_family].append(conf_path)
 
     return config_packets

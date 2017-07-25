@@ -7,6 +7,8 @@ import pandas as pd
 import argparse
 
 
+# Skip reading 1st row : Header
+# Skip reading last row : Footer
 def parse_data(file_path):
     csv_file = pd.read_csv(file_path, sep=',', skiprows=1, skipfooter=1, engine='python')
     algo = csv_file['INFO:root:algorithm'].apply(lambda x: x.split(':')[-1])
@@ -45,6 +47,7 @@ def get_dim(sheet):
     col = len(col_count[0])
     return row, col
 
+#  ./google_docs.py --file ../temp/test.out --backend singlenode --auth client_json.json --tag 3.0
 if __name__ == '__main__':
     execution_mode = ['hybrid_spark', 'singlenode']
 
