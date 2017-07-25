@@ -68,14 +68,14 @@ def get_data_dict(data_col):
                         data_dict[k].append(v)
     return data_dict
 
-
+# ./stats.py --auth client_json.json --backend singlenode --tags 1.0 2.0
 if __name__ == '__main__':
     execution_mode = ['hybrid_spark', 'singlenode']
 
     cparser = argparse.ArgumentParser(description='System-ML Statistics Script')
     cparser.add_argument('--auth', help='Location to read auth file',
                          required=True, metavar='')
-    cparser.add_argument('--backend', help='Backend Type', choices=execution_mode,
+    cparser.add_argument('--exec-mode', help='Execution mode', choices=execution_mode,
                          required=True, metavar='')
     cparser.add_argument('--tags', help='Tagging header value',
                          required=True, nargs='+')
