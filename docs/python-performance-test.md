@@ -158,7 +158,7 @@ The logs contain the following information below comma separated.
 
 algorithm | run_type | intercept | matrix_type | data_shape | time_sec
 --- | --- | --- | --- | --- | --- |
-multinomial|data-gen|0|dense|10k_100| 0.33
+multinomial|data-gen|0|10k_100|dense| 0.33
 MultiLogReg|train|0|10k_100|dense|6.956
 MultiLogReg|predict|0|10k_100|dense|4.780
 
@@ -187,8 +187,11 @@ Matrix Shape | Approximate Data Size
 10M_1k|80GB
 100M_1k|800GB
 
+
 For example the command below runs performance test for all data sizes described above
 `run_perftest.py --family binomial clustering multinomial regression1 regression2 stats1 stats2 --mat-shape 10k_1k 100k_1k 1M_1k 10M_1k 100M_1k --master yarn-client  --temp-dir hdfs://localhost:9000/user/systemml`
+
+By default data generated in `hybrid_spark` execution mode is in the current users `hdfs` home directory.
 
 Note: Please use this command `pip3 install -r requirements.txt` before using the perftest scripts.
 

@@ -233,10 +233,11 @@ def perf_test_entry(family, algo, exec_type, mat_type, mat_shape, config_dir, mo
 
         conf_packet = config_packets_train(algos_to_run, mat_type, mat_shape, data_gen_dir,
                                            train_dir, DENSE_TYPE_ALGOS, train_config_dir)
-        for algo_name, config_files in conf_packet.items():
+        for algo_family_name, config_files in conf_packet.items():
             for config in config_files:
+                algo_name = algo_family_name.split('.')[0]
                 file_name = ML_TRAIN[algo_name]
-                algorithm_workflow(algo_name, exec_type, config, file_name, 'train', train_dir)
+                algorithm_workflow(algo_family_name, exec_type, config, file_name, 'train', train_dir)
 
     if 'predict' in mode:
         # Create config directories
@@ -255,10 +256,12 @@ def perf_test_entry(family, algo, exec_type, mat_type, mat_shape, config_dir, mo
         conf_packet = config_packets_predict(algos_to_run, mat_type, mat_shape, data_gen_dir,
                                              train_dir, predict_dir, DENSE_TYPE_ALGOS,
                                              predict_config_dir)
-        for algo_name, config_files in conf_packet.items():
+
+        for algo_family_name, config_files in conf_packet.items():
                 for config in config_files:
+                    algo_name = algo_family_name.split('.')[0]
                     file_name = ML_PREDICT[algo_name]
-                    algorithm_workflow(algo_name, exec_type, config, file_name, 'predict', predict_dir)
+                    algorithm_workflow(algo_family_name, exec_type, config, file_name, 'predict', predict_dir)
 
 
 if __name__ == '__main__':

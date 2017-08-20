@@ -20,11 +20,13 @@
 #
 # -------------------------------------------------------------
 
+import sys
 import argparse
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
-
+import os.path
+import csv
 # Update data to google sheets
 
 
@@ -83,6 +85,12 @@ def get_dim(sheet):
     return row, col
 
 
+def row_append(data_frame, file):
+    append_df = pd.read_csv(file)
+    concat_data = pd.concat([data_frame, append_df], axis=1)
+    return concat_data
+
+
 # Example Usage
 #  ./update.py --file ../temp/test.out --exec-mode singlenode --auth client_json.json --tag 3.0
 if __name__ == '__main__':
@@ -93,18 +101,34 @@ if __name__ == '__main__':
                          required=True, metavar='')
     cparser.add_argument('--exec-mode', help='Backend Type', choices=execution_mode,
                          required=True, metavar='')
-    cparser.add_argument('--auth', help='Location to read auth file',
-                         required=True, metavar='')
+    cparser.add_argument('--auth', help='Location to read auth file', metavar='')
     cparser.add_argument('--tag', help='Tagging header value',
                          required=True, metavar='')
+    cparser.add_argument('--append', help='Location to append the outputs', metavar='')
 
     args = cparser.parse_args()
-    arg_dict = vars(args)
 
-    # Authenticate and get sheet dimensions
-    sheet = auth(args.auth, args.exec_mode)
-    row, col = get_dim(sheet)
+    if args.auth is None and args.append is None:
+        sys.exit('Both --auth and --append cannot be empty')
 
-    # Read data from file and write to google docs
     algo, time = parse_data(args.file)
-    insert_pair(algo, time, col + 1, args.tag)
+
+    if args.append is not None:
+        schema_df = {'algo_{}'.format(args.tag): algo,
+                     'time_{}'.format(args.tag): time}
+        data_frame = pd.DataFrame(schema_df)
+        if os.path.isfile(args.append):
+            append_data = row_append(data_frame, args.append)
+            append_data.to_csv(args.append, sep=',', index=False)
+        else:
+            data_frame.to_csv(args.append, sep=',', index=False)
+
+    if args.auth is not None:
+        # Read data from file and write to google docs
+        algo, time = parse_data(args.file)
+
+        # Authenticate and get sheet dimensions
+        sheet = auth(args.auth, args.exec_mode)
+        row, col = get_dim(sheet)
+
+        insert_pair(algo, time, col + 1, args.tag)
